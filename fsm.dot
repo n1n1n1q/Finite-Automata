@@ -1,0 +1,29 @@
+digraph finite_state_machine {
+	fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+	rankdir=LR;
+	node [shape = doublecircle]; "Death";
+	node [shape = circle];
+    "Sleep" -> "Sleep" [label = "Hours 0 - 7 OR \nExhaustion\n (Oversleep -\n random event,\n 20%)"]
+    "Sleep" -> "Eat" [label = "Hour 7"]
+    "Sleep" -> "Study" [label = "Hour 8"]
+    "Sleep" -> "Death" [label = "Hunger < 0 OR\nExhaustion < 0 OR\nSanity < 0"]
+    
+    "Eat" -> "Relax" [label = "Any hour input,\napart from 8"]
+    "Eat" -> "Study" [label = "Hour 8"]
+    "Eat" -> "Death" [label = "Hunger < 0 OR\nExhaustion < 0 OR\nSanity < 0"]
+    
+    "Study" -> "Study" [label = "Hours 9 - 13,\nHours 17 - 21,\nHours 0 - 4\nOverstudy event\nHours 14, 22, 5\n40%"]
+    "Study" -> "Coffee" [label = "Random event\nStudy hours\n25%"]
+    "Study" -> "Death" [label = "Hunger < 0 OR\nExhaustion < 0 OR\nSanity < 0"]
+    "Study" -> "Sleep" [label = "Exhaustion"]
+    "Study" -> "Eat" [label = "Threshold \nstudy\\overstudy hours"]
+
+    "Coffee" -> "Study" [label = "Study hours"]
+    "Coffee" -> "Death" [label = "Hunger < 0 OR\nExhaustion < 0 OR\nSanity < 0"]
+    
+    "Relax" -> "Study" [label = "Random event\nExhausted + 20% OR\nStudy hours"]
+    "Relax" -> "Sleep" [label = "Exhaustion"]
+    
+}

@@ -38,7 +38,7 @@ class FSM:
     """
 
     STUDY_HOURS = [9, 10, 11, 12, 13] + [17, 18, 19, 20, 21] + [0, 1, 2, 3]
-    OVERSTUDY_HOURS = [15, 23, 5]
+    OVERSTUDY_HOURS = [14, 22, 4]
 
     def __init__(self, extended: bool = False) -> None:
         self.extended = extended
