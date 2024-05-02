@@ -8,15 +8,16 @@ import random
 
 class PassAwayException(Exception):
     """
-    Pass awa exception
+    Pass away exception
     """
+
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
 
 def to_generator(func):
     """
-    ...
+    Transforms function into a generator
     """
 
     def wrapper(*args, **kwargs):
@@ -29,7 +30,11 @@ def to_generator(func):
 
 class FSM:
     """
-    FSM class
+    Simulation of 1st year CS student's life (with finite state machine)
+    States: sleep, study, eat, relax, coffee, passed
+    Random events: overslept, messed up cooking, overstudy, random coffee gains
+
+    :param bool extended: debug mode
     """
 
     STUDY_HOURS = [9, 10, 11, 12, 13] + [17, 18, 19, 20, 21] + [0, 1, 2, 3]
@@ -54,24 +59,24 @@ class FSM:
         self.state_eat = self._eat()
         self.state_relax = self._relax()
         self.state_coffee = self._coffee_break()
+        self.state_passed = self._pass_away()
         self.current_state = self.state_sleep
 
-    def send_input(self, hour):
-        """
-        ...
-        """
-        self.current_state.send(hour)
-        if self.sanity <= 0:
-            print("You went crazy")
-            raise PassAwayException("you died lol")
-        if self.hunger <= 0:
-            print("You starved to death")
-            raise PassAwayException("you died lol")
+    def __debug(self, hour, state):
+        if self.extended:
+            print(
+                f"""
+=============================
+    CURRENT HOUR = {hour}
+   CURRENT STATE = {state}
+=============================
+"""
+            )
 
     @to_generator
     def _sleep(self):
         """
-        Sleep
+        Sleep state
         """
         while True:
             hour = yield
@@ -83,17 +88,17 @@ class FSM:
             elif hour == 8:
                 print("Oh no! You missed your alarm")
                 self.sanity -= 1
-                self.hunger -= 1
+                self.hunger -= 0.5
                 self.current_state = self.state_study
             else:
                 print("Zzz.....")
                 self.energy_level += 1
-                self.hunger -= 0.5
+                self.hunger -= 0.2
 
     @to_generator
     def _eat(self):
         """
-        Eat
+        Eat state
         """
         while True:
             hour = yield
@@ -106,24 +111,24 @@ class FSM:
                 print("You had a proper breakfast")
                 self.hunger += 2.5
                 self.energy_level += 2
-                self.sanity+=1
+                self.sanity += 1
                 self.current_state = self.state_study
             elif hour == 15:
                 print("You cooked for dinner the best pasta in your life!")
-                self.hunger+=4
-                self.energy_level+=4
-                self.sanity+=2
+                self.hunger += 4
+                self.energy_level += 4
+                self.sanity += 2
                 self.current_state = self.state_relax
             else:
                 print("You had a snack")
-                self.hunger+=2
-                self.energy_level+=1
+                self.hunger += 2
+                self.energy_level += 1
                 self.current_state = self.state_relax
 
     @to_generator
     def _study(self):
         """
-        Study
+        Study state
         """
         while True:
             hour = yield
@@ -135,65 +140,105 @@ class FSM:
             elif hour in self.OVERSTUDY_HOURS and dice > 0.6:
                 print("You forgot about exhaustion and continued studying")
                 self.energy_level -= 1
-                self.hunger -= 0.5
+                self.hunger -= 0.3
                 self.sanity -= 1
                 self.study_streak += 1
             elif hour in self.STUDY_HOURS:
                 print("Studying...")
                 self.study_streak += 1
                 self.energy_level -= 1
-                self.hunger -= 0.5
-            elif self.is_exhausted(hour):
+                self.hunger -= 0.3
+            elif self._is_exhausted(hour):
                 print("You felt so exhausted so you went sleeping")
                 self.study_streak = 0
                 self.current_state = self.state_sleep
             else:
-                print("You are going to have a meal")
-                print(hour)
-                self.study_streak = 0
+                print("Time for having a meal!")
                 self.current_state = self.state_eat
 
     @to_generator
     def _relax(self):
         """
-        Relax break
+        Relax break state
         """
         while True:
             hour = yield
             self.__debug(hour, "Relax")
-            print("Relax time!")
-            self.study_streak = 0
-            self.sanity += 2
-            self.hunger -= 1
-            self.current_state = self.state_study
+            dice = random.random()
+            print("Relaxing time!")
+            self.energy_level += 2
+            self.sanity += 3
+            if dice > 0.8 and self.study_streak < 3 and self._is_exhausted(hour):
+                print("You hadn't studied enough...")
+                self.current_state = self.state_study
+            elif self._is_exhausted(hour):
+                self.current_state = self.state_sleep
+            else:
+                self.current_state = self.state_study
 
     @to_generator
     def _coffee_break(self):
         """
-        Break for a cup of coffee
+        Coffee break state
         """
         while True:
             hour = yield
             dice = random.random()
             self.__debug(hour, "Coffee")
             if dice < 0.2:
-                print("The machine is broken, you couldn't get coffee")
+                print("The machine was broken, you couldn't get coffee")
                 self.energy_level -= 0.5
                 self.sanity -= 0.5
                 self.current_state = self.state_study
             elif dice > 0.7:
-                print("The coffee is so good!")
+                print("The coffee was so good!")
                 self.energy_level += 2
                 self.sanity += 0.5
                 self.current_state = self.state_study
             else:
-                print("Sipping some coffee")
+                print("You got some coffee")
                 self.energy_level += 1
                 self.current_state = self.state_study
 
+    @to_generator
+    def _pass_away(self):
+        """
+        Pass away state
+        """
+        while 1:
+            hour = yield
+            self.__debug(hour, "Death")
+            if self.energy_level <= 0:
+                print("You ran out of energy and passed away")
+            elif self.hunger <= 0:
+                print("You starved to death")
+            else:
+                print("You went insane")
+            raise PassAwayException()
+
+    def _is_exhausted(self, hour):
+        """
+        Returns whether the FSM is exhausted
+        """
+        return hour in [23, 0, 1, 2, 3, 4, 5, 6] or self.energy_level <= 3
+
+    def _has_passed_away(self):
+        """
+        Returns whether the FSM has passed away
+        """
+        return self.energy_level <= 0 or self.hunger <= 0 or self.sanity <= 0
+
+    def send_input(self, hour):
+        """
+        Send input to the current state
+        """
+        if self._has_passed_away():
+            self.current_state = self.state_passed
+        self.current_state.send(hour)
+
     def start(self):
         """
-        Start FSM loop
+        Start the FSM loop
         """
         curr = 0
         while 1:
@@ -204,20 +249,6 @@ class FSM:
             time.sleep(0.1)
             curr += 1
 
-    def is_exhausted(self, hour):
-        """
-        Is exhausted
-        """
-        return hour in range(0, 4) and self.energy_level > 3
-
-    def __debug(self, hour, state):
-        if self.extended:
-            print(f"""
-=============================
-    CURRENT HOUR = {hour}
-   CURRENT STATE = {state}
-=============================
-""")
 
 if __name__ == "__main__":
     automata = FSM(True)
